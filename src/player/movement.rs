@@ -147,7 +147,7 @@ pub fn move_player(
         gravity_dir,
     );
 
-    player.jump_buffer = if input.just_pressed(TerminalKeyCode::Up) {
+    player.jump_buffer = if input.pressed(TerminalKeyCode::Up) {
         JUMP_BUFFER_SECONDS
     } else {
         (player.jump_buffer - dt).max(0.0)

@@ -42,7 +42,7 @@ fn main_menu_input(
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     if menu.confirm_delete {
-        if input.just_pressed(TerminalKeyCode::Enter) {
+        if input.pressed(TerminalKeyCode::Enter) {
             if let Err(err) = levels.remove(menu.selected) {
                 error!("could not delete level {}: {err}", menu.selected);
             } else {
@@ -50,22 +50,22 @@ fn main_menu_input(
             }
 
             menu.confirm_delete = false;
-        } else if input.just_pressed(TerminalKeyCode::Esc) {
+        } else if input.pressed(TerminalKeyCode::Esc) {
             menu.confirm_delete = false;
         }
 
         return;
     }
 
-    if input.just_pressed(TerminalKeyCode::Up) {
+    if input.pressed(TerminalKeyCode::Up) {
         menu.previous();
     }
 
-    if input.just_pressed(TerminalKeyCode::Down) {
+    if input.pressed(TerminalKeyCode::Down) {
         menu.next(levels.len());
     }
 
-    if input.just_pressed(TerminalKeyCode::Char('+')) {
+    if input.pressed(TerminalKeyCode::Char('+')) {
         let index = match levels.create() {
             Ok(index) => index,
             Err(err) => {
@@ -80,11 +80,11 @@ fn main_menu_input(
         return;
     }
 
-    if input.just_pressed(TerminalKeyCode::Char('-')) && !levels.is_empty() {
+    if input.pressed(TerminalKeyCode::Char('-')) && !levels.is_empty() {
         menu.confirm_delete = true;
     }
 
-    if input.just_pressed(TerminalKeyCode::Enter) {
+    if input.pressed(TerminalKeyCode::Enter) {
         load_level_events.write(LoadLevelEvent {
             index: menu.selected,
         });

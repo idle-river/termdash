@@ -181,7 +181,7 @@ pub fn apply_player_triggers(
     config: Res<Config>,
 ) {
     let (mut commands, mut deaths) = side_effects;
-    let jump_pressed = input.just_pressed(TerminalKeyCode::Up);
+    let jump_pressed = input.pressed(TerminalKeyCode::Up);
     let level_units_per_pixel = config.camera.zoom;
 
     let (player_entity, mut transform, collider, mut sprite, mut velocity, mut player) =

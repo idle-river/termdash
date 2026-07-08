@@ -30,9 +30,9 @@ fn app_state_input(
     state: Res<State<AppState>>,
     mut next: ResMut<NextState<AppState>>,
 ) {
-    let esc = input.just_pressed(TerminalKeyCode::Esc);
-    let enter = input.just_pressed(TerminalKeyCode::Enter);
-    let edit = input.just_pressed(TerminalKeyCode::Char('e'));
+    let esc = input.pressed(TerminalKeyCode::Esc);
+    let enter = input.pressed(TerminalKeyCode::Enter);
+    let edit = input.pressed(TerminalKeyCode::Char('e'));
 
     let target = match state.get() {
         AppState::Playing if edit && config.game.graphics => Some(AppState::Editing),
