@@ -85,8 +85,8 @@ impl Levels {
         Ok(path.clone())
     }
 
-    /// Register and save a new default level to disk, returning it's index or an error.
-    pub fn save_new(&mut self) -> Result<usize, Box<dyn std::error::Error>> {
+    /// Register and save a new default level to disk, returning its index or an error.
+    pub fn create(&mut self) -> Result<usize, Box<dyn std::error::Error>> {
         let json = fs::read_to_string(self.dir.join("_default_level.json"))?;
         let mut level: Level = serde_json::from_str(&json)?;
 

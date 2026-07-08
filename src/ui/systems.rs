@@ -66,7 +66,7 @@ fn main_menu_input(
     }
 
     if input.just_pressed(TerminalKeyCode::Char('+')) {
-        let index = match levels.save_new() {
+        let index = match levels.create() {
             Ok(index) => index,
             Err(err) => {
                 error!("could not create a new level: {err}");
