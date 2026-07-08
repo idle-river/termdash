@@ -67,9 +67,7 @@ fn update_run_stats(
         return;
     };
 
-    let Some(level) = current_level.get_from(levels.as_ref()) else {
-        return;
-    };
+    let level = current_level.get_from(levels.as_ref());
 
     let player_x = transform.translation.x;
     let start_x = level.player.spawn.x;

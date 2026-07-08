@@ -123,9 +123,7 @@ pub fn move_player(
     let (solids, side_kill_solids, player) = queries;
     let dt = time.delta_secs();
 
-    let Some(level) = current_level.get_from(&levels) else {
-        return;
-    };
+    let level = current_level.get_from(&levels);
 
     let (player_entity, mut transform, collider, mut velocity, mut player) = player.into_inner();
 

@@ -18,12 +18,22 @@ use std::fs;
 pub struct CurrentLevel(pub Option<usize>);
 
 impl CurrentLevel {
-    pub fn get_from<'a>(&self, levels: &'a Levels) -> Option<&'a Level> {
-        levels.get(self.0?)
+    /// Will panic if `self.0` or `levels[self.0]` is None.
+    pub fn get_from<'a>(&self, levels: &'a Levels) -> &'a Level {
+        levels.get(self.index()).expect("there should be a level")
+    }
+    /// Will panic if `self.0` or `levels[self.0]` is None.
+    pub fn get_from_mut<'a>(&self, levels: &'a mut Levels) -> &'a mut Level {
+        levels
+            .get_mut(self.index())
+            .expect("there should be a level")
     }
 
-    pub fn get_from_mut<'a>(&self, levels: &'a mut Levels) -> Option<&'a mut Level> {
-        levels.get_mut(self.0?)
+    /// Will panic if the `self.0` is `None`.
+    ///
+    /// This should only be used when you are sure there is a current level loaded.
+    pub fn index(&self) -> usize {
+        self.0.expect("there should be a current level")
     }
 }
 

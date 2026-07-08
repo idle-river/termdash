@@ -28,9 +28,7 @@ pub fn refresh_level(
     let (config, asset_server, prefabs, levels) = resources;
     let (mut meshes, mut materials) = render_assets;
 
-    let Some(level) = world.current_level.get_from(&levels) else {
-        return;
-    };
+    let level = world.current_level.get_from(&levels);
 
     despawn_music(&mut commands, &world.music_entities);
 

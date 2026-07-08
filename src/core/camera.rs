@@ -44,11 +44,8 @@ pub fn follow_player(
     let (mut camera_transform, projection, ratatui_camera) = camera.into_inner();
     let scale = projection_scale_or(projection, config.camera.zoom);
     let world_height = ratatui_camera.dimensions.y as f32 * scale;
-    let ground_bottom = current_level
-        .get_from(&levels)
-        .as_ref()
-        .map(|level| level.ground.y - level.ground.height * 0.5)
-        .unwrap();
+    let level = current_level.get_from(&levels);
+    let ground_bottom = level.ground.y - level.ground.height * 0.5;
     let bottom_margin = world_height * config.camera.bottom_margin_fraction;
     camera_transform.translation.x = player.translation.x;
     camera_transform.translation.y = ground_bottom + world_height * 0.5 - bottom_margin;
