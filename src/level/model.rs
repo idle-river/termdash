@@ -167,6 +167,16 @@ components!(
     AudioVisualizerBar,
 );
 
+pub fn music_playing<const PLAYING: bool>(music: Query<&AudioSink, With<LevelMusic>>) {
+    for sink in &music {
+        if PLAYING {
+            sink.play();
+        } else {
+            sink.pause();
+        }
+    }
+}
+
 newtype! {
 #[derive(Component, Clone)]
 pub struct ObjectAnimator(pub Vec<ObjectAnimation>);

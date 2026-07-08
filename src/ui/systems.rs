@@ -1,7 +1,6 @@
 use crate::AppState;
 use crate::input::InputState;
 use crate::level::load::LoadLevelEvent;
-use crate::level::model::LevelMusic;
 use crate::level::registry::Levels;
 use crate::ui::model::LevelMenu;
 use crate::ui::render;
@@ -14,22 +13,6 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<LevelMenu>()
             .add_systems(Update, main_menu_input.run_if(in_state(AppState::MainMenu)))
-            .add_systems(OnEnter(AppState::Paused), music_playing::<true>)
-            .add_systems(OnEnter(AppState::Editing), music_playing::<true>)
-            .add_systems(
-                OnTransition {
-                    exited: AppState::Paused,
-                    entered: AppState::Playing,
-                },
-                music_playing::<false>,
-            )
-            .add_systems(
-                OnTransition {
-                    exited: AppState::Editing,
-                    entered: AppState::Playing,
-                },
-                music_playing::<false>,
-            )
             .add_systems(PostUpdate, render);
     }
 }
@@ -89,15 +72,5 @@ fn main_menu_input(
             index: menu.selected,
         });
         next_state.set(AppState::Playing);
-    }
-}
-
-fn music_playing<const PAUSED: bool>(music: Query<&AudioSink, With<LevelMusic>>) {
-    for sink in &music {
-        if PAUSED {
-            sink.pause();
-        } else {
-            sink.play();
-        }
     }
 }

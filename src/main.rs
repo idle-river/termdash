@@ -36,7 +36,7 @@ use crate::input::InputPlugin;
 use crate::level::LevelPlugin;
 use crate::paths::GamePaths;
 use crate::player::PlayerPlugin;
-use crate::state::{AppState, AppStatePlugin};
+use crate::state::{AppState, StatePlugin};
 use crate::ui::UiPlugin;
 
 static LOG_GUARD: OnceLock<WorkerGuard> = OnceLock::new();
@@ -121,7 +121,7 @@ fn main() {
         PlayerPlugin,
         GameplayPlugin,
         InputPlugin,
-        AppStatePlugin,
+        StatePlugin,
     ))
     .run();
 }

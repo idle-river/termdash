@@ -1,3 +1,4 @@
+use crate::level::model::music_playing;
 use bevy::prelude::*;
 use ratatui::crossterm::event::KeyCode as TerminalKeyCode;
 
@@ -16,11 +17,21 @@ pub enum AppState {
     Victory,
 }
 
-pub struct AppStatePlugin;
+pub struct StatePlugin;
 
-impl Plugin for AppStatePlugin {
+impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, app_state_input);
+        for state in [AppState::Editing, AppState::Paused] {
+            app.add_systems(OnEnter(state), music_playing::<false>)
+                .add_systems(
+                    OnTransition {
+                        exited: state,
+                        entered: AppState::Playing,
+                    },
+                    music_playing::<true>,
+                );
+        }
     }
 }
 
