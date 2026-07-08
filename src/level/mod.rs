@@ -19,7 +19,7 @@ impl Plugin for LevelPlugin {
         };
         let levels = {
             let paths = app.world().resource::<GamePaths>();
-            Levels::load(paths).unwrap_or_else(|err| panic!("failed to load worlds: {}", err))
+            Levels::load(paths).expect("to load levels")
         };
 
         app.init_resource::<CurrentLevel>()
