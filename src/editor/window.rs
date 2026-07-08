@@ -5,11 +5,7 @@ use bevy::{
     prelude::*,
     window::{PresentMode, WindowCloseRequested, WindowFocused, WindowRef, WindowResolution},
 };
-use bevy_egui::{EguiGlobalSettings, EguiMultipassSchedule};
-
-pub fn disable_primary_egui_context(mut settings: ResMut<EguiGlobalSettings>) {
-    settings.auto_create_primary_context = false;
-}
+use bevy_egui::EguiMultipassSchedule;
 
 pub fn open_editor_window(mut commands: Commands, windows: Query<Entity, With<EditorWindow>>) {
     if !windows.is_empty() {
