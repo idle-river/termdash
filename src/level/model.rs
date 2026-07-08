@@ -27,7 +27,7 @@ pub struct Level {
     pub player: PlayerDef,
     pub ground: Ground,
     #[serde(default)]
-    pub objects: Vec<LevelObject>,
+    pub objects: Vec<PartialLevelObject>,
     pub music_path: Option<String>,
     pub audio_visualizer: Option<AudioVisualizer>,
 }
@@ -95,30 +95,37 @@ fn is_default_scale(scale: &f32) -> bool {
     *scale == default_scale()
 }
 
+/// The user-facing level object; not fully resolved, including a prefab.
 #[level_data(Default)]
-pub struct LevelObject {
+pub struct PartialLevelObject {
     pub prefab: Option<String>,
     pub position: Vec2,
     #[serde(default = "default_scale", skip_serializing_if = "is_default_scale")]
     pub scale: f32,
+    #[serde(flatten)]
+    pub data: ObjectData,
+}
+
+pub type Prefab = ObjectData;
+
+/// What's actually in an object (not scale/position).
+#[level_data(Default, merge::Merge)]
+#[merge(strategy = merge::option::overwrite_none)]
+pub struct ObjectData {
     pub color: Option<Color>,
     pub visual: Option<Visual>,
     pub collider: Option<ColliderConstructor>,
     pub behavior: Option<ObjectBehavior>,
 }
 
-#[derive(Deserialize)]
-pub struct Prefab {
-    #[serde(default)]
+/// A standalone (resolved) level object with all required fields...required!
+pub struct LevelObject {
+    pub position: Vec2,
+    pub scale: f32,
     pub color: Option<Color>,
     pub visual: Visual,
-    pub collider: Option<ColliderConstructor>,
-    pub behavior: Option<ObjectBehavior>,
-}
-
-newtype! {
-#[level_data]
-pub struct ObjectShape(pub ColliderConstructor);
+    pub collider: ColliderConstructor,
+    pub behavior: ObjectBehavior,
 }
 
 #[level_data(PartialEq)]
@@ -135,7 +142,7 @@ pub enum ObjectBehavior {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Visual {
     Shape {
-        shape: ObjectShape,
+        shape: ColliderConstructor,
         #[serde(default)]
         animations: Vec<ObjectAnimation>,
     },
@@ -144,14 +151,6 @@ pub enum Visual {
         #[serde(default)]
         animations: Vec<ObjectAnimation>,
     },
-}
-
-#[derive(Clone, Debug)]
-pub struct ResolvedObject {
-    pub color: Option<Color>,
-    pub visual: Visual,
-    pub collider: ColliderConstructor,
-    pub behavior: ObjectBehavior,
 }
 
 #[level_data]

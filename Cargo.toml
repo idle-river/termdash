@@ -26,6 +26,7 @@ level_data_macros = { path = "level_data_macros" }
 inventory = "0.3"
 directories = "6.0.0"
 include_dir = "0.7.4"
+merge = "0.2.0"
 
 # perf
 [profile.dev]

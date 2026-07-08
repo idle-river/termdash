@@ -2,8 +2,8 @@ use crate::config::Config;
 use crate::gameplay::triggers::PlayerTrigger;
 use crate::level::model::{KillPlayerOnSide, LevelEntity, LevelMusic, Solid};
 use crate::level::model::{
-    Level, LevelObject, ObjectAnimation, ObjectAnimator, ObjectBehavior, ObjectShape, Prefabs,
-    ResolvedObject, Visual,
+    Level, LevelObject, ObjectAnimation, ObjectAnimator, ObjectBehavior, PartialLevelObject,
+    Prefabs, Visual,
 };
 use crate::level::queries::MusicEntities;
 use crate::level::registry::Levels;
@@ -11,7 +11,7 @@ use crate::paths::GamePaths;
 use crate::player::components::Player;
 use avian2d::prelude::{ColliderConstructor, RigidBody, Sensor};
 use bevy::prelude::*;
-use std::fmt;
+use merge::Merge;
 use std::fs;
 
 #[derive(Resource, Default)]
@@ -50,42 +50,40 @@ impl Prefabs {
     }
 }
 
-impl ObjectShape {
-    fn insert(
-        self,
-        entity: &mut EntityCommands,
-        meshes: &mut Assets<Mesh>,
-        materials: &mut Assets<ColorMaterial>,
-        color: Color,
-    ) {
-        match self.0 {
-            ColliderConstructor::Rectangle { x_length, y_length } => {
-                let size = Vec2::new(x_length, y_length);
-                entity.insert(Sprite::from_color(color, size));
-            }
-            ColliderConstructor::Circle { radius } => {
-                let mesh = Circle::new(radius);
-                entity.insert((
-                    Mesh2d(meshes.add(mesh)),
-                    MeshMaterial2d(materials.add(color)),
-                ));
-            }
-            ColliderConstructor::Triangle { a, b, c } => {
-                let mesh = Triangle2d::new(a, b, c);
-                entity.insert((
-                    Mesh2d(meshes.add(mesh)),
-                    MeshMaterial2d(materials.add(color)),
-                ));
-            }
-            s => {
-                warn!("skipping unsupported shape visual: {s:?}");
-            }
+fn insert_shape_visual(
+    entity: &mut EntityCommands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+    shape: &ColliderConstructor,
+    color: Color,
+) {
+    match shape {
+        ColliderConstructor::Rectangle { x_length, y_length } => {
+            let size = Vec2::new(*x_length, *y_length);
+            entity.insert(Sprite::from_color(color, size));
+        }
+        ColliderConstructor::Circle { radius } => {
+            let mesh = Circle::new(*radius);
+            entity.insert((
+                Mesh2d(meshes.add(mesh)),
+                MeshMaterial2d(materials.add(color)),
+            ));
+        }
+        ColliderConstructor::Triangle { a, b, c } => {
+            let mesh = Triangle2d::new(*a, *b, *c);
+            entity.insert((
+                Mesh2d(meshes.add(mesh)),
+                MeshMaterial2d(materials.add(color)),
+            ));
+        }
+        s => {
+            warn!("skipping unsupported shape visual: {s:?}");
         }
     }
 }
 
 impl ObjectBehavior {
-    fn insert(self, entity: &mut EntityCommands) {
+    fn insert(&self, entity: &mut EntityCommands) {
         match self {
             ObjectBehavior::Solid => {
                 entity.insert((Solid, KillPlayerOnSide, RigidBody::Static));
@@ -94,113 +92,62 @@ impl ObjectBehavior {
                 entity.insert((
                     RigidBody::Static,
                     Sensor,
-                    PlayerTrigger { activation, effect },
+                    PlayerTrigger {
+                        activation: activation.clone(),
+                        effect: effect.clone(),
+                    },
                 ));
             }
         }
     }
 }
 
-impl LevelObject {
-    fn spawn(
-        &self,
-        index: usize,
-        commands: &mut Commands,
-        (meshes, materials): (&mut Assets<Mesh>, &mut Assets<ColorMaterial>),
-        prefabs: &Prefabs,
-        asset_server: &AssetServer,
-    ) {
-        let resolved = match self.resolve(prefabs) {
-            Ok(resolved) => resolved,
-            Err(err) => {
-                warn!("skipping unresolved level object #{index}: {err}: {self:?}");
-                return;
-            }
-        };
+impl PartialLevelObject {
+    pub fn resolve(&self, prefabs: &Prefabs) -> Option<LevelObject> {
+        let mut data = self.data.clone();
 
-        let mut entity = commands.spawn((
-            LevelEntity,
-            resolved.collider,
-            Transform::from_translation(self.position.extend(0.0))
-                .with_scale(Vec3::splat(self.scale)),
-        ));
+        if let Some(name) = self.prefab.as_deref() {
+            data.merge(prefabs.get(name)?.clone());
+        }
 
-        resolved.behavior.insert(&mut entity);
+        let visual = data.visual?;
 
-        resolved.visual.spawn(
-            &mut entity,
-            meshes,
-            materials,
-            self.color.or(resolved.color),
-            asset_server,
-        );
-    }
+        let collider = data.collider.or_else(|| match &visual {
+            Visual::Shape { shape, .. } => Some(shape.clone()),
+            _ => None,
+        })?;
 
-    fn resolve(&self, prefabs: &Prefabs) -> Result<ResolvedObject, ResolveObjectError> {
-        let prefab = self
-            .prefab
-            .as_ref()
-            .map(|name| {
-                prefabs
-                    .get(name)
-                    .ok_or_else(|| ResolveObjectError::UnknownPrefab(name.clone()))
-            })
-            .transpose()?;
-
-        let visual = self
-            .visual
-            .as_ref()
-            .or_else(|| prefab.map(|prefab| &prefab.visual))
-            .ok_or(ResolveObjectError::MissingVisual)?;
-
-        let collider = self
-            .collider
-            .as_ref()
-            .or_else(|| prefab.and_then(|prefab| prefab.collider.as_ref()))
-            .or_else(|| match visual {
-                Visual::Shape { shape, .. } => Some(shape),
-                _ => None,
-            })
-            .ok_or(ResolveObjectError::MissingCollider)?;
-
-        let behavior = self
-            .behavior
-            .as_ref()
-            .or_else(|| prefab.and_then(|prefab| prefab.behavior.as_ref()))
-            .ok_or(ResolveObjectError::MissingBehavior)?;
-
-        Ok(ResolvedObject {
-            color: self
-                .color
-                .or_else(|| prefab.and_then(|prefab| prefab.color)),
-            visual: visual.to_owned(),
-            behavior: behavior.clone(),
-            collider: collider.clone(),
+        Some(LevelObject {
+            position: self.position,
+            scale: self.scale,
+            color: data.color,
+            visual,
+            collider,
+            behavior: data.behavior?,
         })
     }
 }
 
-enum ResolveObjectError {
-    UnknownPrefab(String),
-    MissingVisual,
-    MissingCollider,
-    MissingBehavior,
-}
+impl LevelObject {
+    fn spawn(
+        &self,
+        commands: &mut Commands,
+        (meshes, materials): (&mut Assets<Mesh>, &mut Assets<ColorMaterial>),
+        asset_server: &AssetServer,
+    ) {
+        let transform = Transform::from_translation(self.position.extend(0.0))
+            .with_scale(Vec3::splat(self.scale));
+        let mut entity = commands.spawn((LevelEntity, self.collider.clone(), transform));
 
-impl fmt::Display for ResolveObjectError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UnknownPrefab(name) => write!(f, "unknown prefab {name:?}"),
-            Self::MissingVisual => f.write_str("missing visual"),
-            Self::MissingCollider => f.write_str("missing collider"),
-            Self::MissingBehavior => f.write_str("missing behavior"),
-        }
+        self.behavior.insert(&mut entity);
+        self.visual
+            .spawn(&mut entity, meshes, materials, self.color, asset_server);
     }
 }
 
 impl Visual {
     fn spawn(
-        self,
+        &self,
         entity: &mut EntityCommands,
         meshes: &mut Assets<Mesh>,
         materials: &mut Assets<ColorMaterial>,
@@ -209,7 +156,13 @@ impl Visual {
     ) {
         match self {
             Visual::Shape { shape, animations } => {
-                shape.insert(entity, meshes, materials, color.unwrap_or(Color::WHITE));
+                insert_shape_visual(
+                    entity,
+                    meshes,
+                    materials,
+                    shape,
+                    color.unwrap_or(Color::WHITE),
+                );
                 ObjectAnimation::insert_all(entity, animations);
             }
             Visual::Sprite { path, animations } => {
@@ -236,13 +189,12 @@ pub fn spawn_authored_level(
     }
 
     for (index, object) in level.objects.iter().enumerate() {
-        object.spawn(
-            index,
-            commands,
-            (&mut *meshes, &mut *materials),
-            prefabs,
-            asset_server,
-        );
+        let Some(resolved) = object.resolve(prefabs) else {
+            warn!("skipping unresolved level object #{index}: {object:?}");
+            continue;
+        };
+
+        resolved.spawn(commands, (&mut *meshes, &mut *materials), asset_server);
     }
 }
 
@@ -319,9 +271,9 @@ pub fn spawn_music(
 }
 
 impl ObjectAnimation {
-    fn insert_all(entity: &mut EntityCommands, animations: Vec<Self>) {
+    fn insert_all(entity: &mut EntityCommands, animations: &[Self]) {
         if !animations.is_empty() {
-            entity.insert(ObjectAnimator(animations));
+            entity.insert(ObjectAnimator(animations.to_vec()));
         }
     }
 
