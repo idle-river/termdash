@@ -34,3 +34,13 @@ macro_rules! components {
         $(#[derive(Component)] pub struct $component;)*
     };
 }
+
+/// Early return if the given `MessageReader` does not contain the specified message type.
+#[macro_export]
+macro_rules! require_message {
+    ($reader:expr, $pat:pat) => {
+        if !$reader.read().any(|msg| matches!(*msg, $pat)) {
+            return;
+        }
+    };
+}
