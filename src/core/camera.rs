@@ -9,7 +9,7 @@ use ratatui::layout::Rect as RatatuiRect;
 use ratatui::prelude::Buffer;
 pub struct CameraPlugin;
 
-type CameraQuery<'w, 's> = Single<
+pub type CameraQuery<'w, 's> = Single<
     'w,
     's,
     (

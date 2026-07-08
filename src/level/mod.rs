@@ -7,7 +7,6 @@ use crate::AppState;
 use crate::level::load::{CurrentLevel, LoadLevelEvent, animate_objects, load_level};
 use crate::level::model::Prefabs;
 use crate::level::registry::Levels;
-use crate::level::visualizer::update_audio_visualizer;
 use crate::paths::GamePaths;
 use crate::player::move_player;
 use bevy::prelude::*;
@@ -31,7 +30,7 @@ impl Plugin for LevelPlugin {
                 Update,
                 (
                     load_level.before(move_player),
-                    update_audio_visualizer.run_if(in_state(AppState::Playing)),
+                    visualizer::update.run_if(in_state(AppState::Playing)),
                 ),
             )
             .add_systems(Update, animate_objects.run_if(in_state(AppState::Playing)));

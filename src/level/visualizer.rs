@@ -1,13 +1,8 @@
 // Procedural music visualizer synchronized to audio playback time.
 ///
-/// Each bar combines several time-based wave components:
 /// - low-frequency motion for large swells
 /// - mid-frequency motion for rhythmic variation
 /// - high-frequency motion for shimmer/detail
-///
-/// The oscillators are spatially offset per-bar to create coherent traveling
-/// wave patterns across the screen. The combined signal is clamped and shaped
-/// nonlinearly to exaggerate peaks and suppress weaker movement.
 ///
 /// Bar height, brightness, opacity, and hue animation are all derived from the
 /// same pulse value.
@@ -16,6 +11,7 @@
 /// two completely different audio samples at the same
 /// playback time would appear the same.
 use crate::config::Config;
+use crate::core::camera::CameraQuery;
 use crate::core::camera::projection_scale_or;
 use crate::level::model::AudioVisualizer;
 use crate::level::model::Level;
@@ -36,6 +32,7 @@ pub struct AudioVisualizerBarState {
     max_height: f32,
     phase: f32,
 }
+
 type AudioVisualizerBarBundle = (
     LevelEntity,
     LevelMusic,
@@ -79,21 +76,10 @@ impl AudioVisualizer {
     }
 }
 
-type VisualizerCamera<'w, 's> = Single<
-    'w,
-    's,
-    (
-        &'static Transform,
-        &'static Projection,
-        &'static RatatuiCamera,
-    ),
-    (With<RatatuiCamera>, Without<AudioVisualizerBar>),
->;
-
-pub fn update_audio_visualizer(
+pub fn update(
     config: Res<Config>,
     music: Query<&AudioSink, With<LevelMusic>>,
-    camera: VisualizerCamera,
+    camera: CameraQuery,
     mut bars: Query<
         (&AudioVisualizerBarState, &mut Transform, &mut Sprite),
         Without<RatatuiCamera>,
