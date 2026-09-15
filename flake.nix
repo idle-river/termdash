@@ -1,5 +1,5 @@
 {
-  description = "a geometry dash recreation in the terminal";
+  description = "A Geometry Dash recreation in the terminal";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -16,7 +16,7 @@
       nixpkgs,
       naersk,
       ...
-    }@inputs:
+    }:
     let
       systems = [
         "x86_64-linux"
@@ -25,7 +25,7 @@
         "aarch64-darwin"
       ];
 
-      eachSystem = f: nixpkgs.lib.genAttrs systems (system: f system (nixpkgs.legacyPackages.${system}));
+      eachSystem = f: nixpkgs.lib.genAttrs systems (system: f system nixpkgs.legacyPackages.${system});
     in
     {
       packages = eachSystem (
@@ -35,9 +35,21 @@
         in
         {
           default = naerskLib.buildPackage {
-            name = "termdash";
+            pname = "termdash";
             version = "1.0.0";
             src = ./.;
+          };
+        }
+      );
+
+      devShells = eachSystem (
+        system: pkgs: {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              rustup
+              clippy
+              prettier
+            ];
           };
         }
       );
